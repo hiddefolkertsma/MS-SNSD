@@ -7,6 +7,7 @@ import json
 import argparse
 import configparser as cp
 import numpy as np
+import pandas as pd
 from audiolib import audioread, audiowrite, snr_mixer
 
 
@@ -151,6 +152,11 @@ def main(cfg):
             with open(vadlabelpath, "w") as vadlabelfile:
                 json.dump(labels, vadlabelfile)
             num_samples = num_samples + len(noisy_snr)
+
+    # Create metadata file
+    metadata = {'length': filecounter, 'snr': list(snr), 'fs': fs}
+    with open("metadata.json", 'w') as metadata_file:
+        json.dump(metadata, metadata_file)
 
 
 if __name__ == "__main__":
