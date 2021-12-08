@@ -128,7 +128,6 @@ def main(cfg):
         clean = clean[0:len(noise)]
 
         assert len(clean) == len(noise)
-        filecounter = filecounter + 1
 
         # Mix the clean speech and the noise together and write to output
         for i in range(np.size(snr)):
@@ -153,8 +152,10 @@ def main(cfg):
                 json.dump(labels, vadlabelfile)
             num_samples = num_samples + len(noisy_snr)
 
+        filecounter = filecounter + 1
+
     # Create metadata file
-    metadata = {'length': filecounter, 'snr': list(snr), 'fs': fs}
+    metadata = {'length': filecounter + 1, 'snr': list(snr), 'fs': fs}
     with open("metadata.json", 'w') as metadata_file:
         json.dump(metadata, metadata_file)
 
