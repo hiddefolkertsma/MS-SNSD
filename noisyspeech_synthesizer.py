@@ -167,8 +167,6 @@ if __name__ == "__main__":
 
     cfgpath = os.path.join(os.path.dirname(__file__), args.cfg)
     assert os.path.exists(cfgpath), f"No configuration file as [{cfgpath}]"
-    cfg = cp.ConfigParser()
-    cfg._interpolation = cp.ExtendedInterpolation()
+    cfg = cp.ConfigParser(interpolation=cp.ExtendedInterpolation())
     cfg.read(cfgpath)
-
-    main(cfg._sections[args.cfg_str])
+    main(cfg[args.cfg_str])
