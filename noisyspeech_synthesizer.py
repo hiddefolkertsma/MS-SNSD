@@ -155,7 +155,7 @@ def main(cfg):
         filecounter = filecounter + 1
 
     # Create metadata file
-    metadata = {'length': filecounter + 1, 'snr': list(snr), 'fs': fs}
+    metadata = {'length': filecounter, 'snr': list(snr), 'fs': fs}
     with open("metadata.json", 'w') as metadata_file:
         json.dump(metadata, metadata_file)
 
