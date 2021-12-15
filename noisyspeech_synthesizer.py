@@ -6,6 +6,7 @@ import os
 import json
 import argparse
 import configparser as cp
+from tqdm import tqdm
 import numpy as np
 import pandas as pd
 from audiolib import audioread, audiowrite, snr_mixer
@@ -78,81 +79,86 @@ def main(cfg):
 
     # Main loop where the noise is being added to the speech
     while num_samples < total_samples:
-        # Pick a random noise file
-        idx_n = np.random.randint(0, np.size(noisefilenames))
-        noise, fs = audioread(noisefilenames[idx_n])
+        with tqdm(
+                desc=
+                f"({num_samples / fs / 3600:.2f}/{total_samples / fs / 3600:.2f} hours)"
+        ) as pbar:
+            # Pick a random noise file
+            idx_n = np.random.randint(0, np.size(noisefilenames))
+            noise, fs = audioread(noisefilenames[idx_n])
 
-        # Trim noise if the noise is longer than the audio length
-        if (len(noise) >= audio_length):
-            noise = noise[0:audio_length]
-        else:  # Add another noise file if the result is not long enough
-            while len(noise) <= audio_length:
-                idx_n = idx_n + 1
-                if idx_n >= np.size(noisefilenames) - 1:
-                    idx_n = np.random.randint(0, np.size(noisefilenames))
-                newnoise, fs = audioread(noisefilenames[idx_n])
-                noise = np.append(noise, newnoise)
+            # Trim noise if the noise is longer than the audio length
+            if (len(noise) >= audio_length):
+                noise = noise[0:audio_length]
+            else:  # Add another noise file if the result is not long enough
+                while len(noise) <= audio_length:
+                    idx_n = idx_n + 1
+                    if idx_n >= np.size(noisefilenames) - 1:
+                        idx_n = np.random.randint(0, np.size(noisefilenames))
+                    newnoise, fs = audioread(noisefilenames[idx_n])
+                    noise = np.append(noise, newnoise)
 
-        # Start speech somewhere in the first half of the audio clip
-        start = np.random.randint(0, len(noise) / 2)
+            # Start speech somewhere in the first half of the audio clip
+            start = np.random.randint(0, len(noise) / 2)
 
-        # Pick a random speech file
-        idx_s = np.random.randint(0, np.size(cleanfilenames))
-        clean, fs = audioread(cleanfilenames[idx_s])
+            # Pick a random speech file
+            idx_s = np.random.randint(0, np.size(cleanfilenames))
+            clean, fs = audioread(cleanfilenames[idx_s])
 
-        labels = [(start, start + len(clean))]
-        clean = np.append(np.zeros(start), clean)
+            labels = [(start, start + len(clean))]
+            clean = np.append(np.zeros(start), clean)
 
-        # Trim clean speech if the speech is longer than the noise length
-        if (len(clean) > audio_length):
-            clean = clean[0:audio_length]
-            labels = [(start, audio_length)]
-        else:  # Add another speech file if the result is not long enough
-            while len(clean) < audio_length:
-                idx_s = idx_s + 1
-                if idx_s >= np.size(cleanfilenames) - 1:
-                    idx_s = np.random.randint(0, np.size(cleanfilenames))
-                newclean, fs = audioread(cleanfilenames[idx_s])
+            # Trim clean speech if the speech is longer than the noise length
+            if (len(clean) > audio_length):
+                clean = clean[0:audio_length]
+                labels = [(start, audio_length)]
+            else:  # Add another speech file if the result is not long enough
+                while len(clean) < audio_length:
+                    idx_s = idx_s + 1
+                    if idx_s >= np.size(cleanfilenames) - 1:
+                        idx_s = np.random.randint(0, np.size(cleanfilenames))
+                    newclean, fs = audioread(cleanfilenames[idx_s])
 
-                # Random silence duration before next clip
-                silence_length = int(
-                    fs * np.random.uniform(silence_lower, silence_upper))
+                    # Random silence duration before next clip
+                    silence_length = int(
+                        fs * np.random.uniform(silence_lower, silence_upper))
 
-                # Start time of next audio clip
-                start = labels[-1][1] + silence_length
+                    # Start time of next audio clip
+                    start = labels[-1][1] + silence_length
 
-                labels.append((start, start + len(newclean)))
-                cleanconcat = np.append(clean, np.zeros(silence_length))
-                clean = np.append(cleanconcat, newclean)
+                    labels.append((start, start + len(newclean)))
+                    cleanconcat = np.append(clean, np.zeros(silence_length))
+                    clean = np.append(cleanconcat, newclean)
 
-        clean = clean[0:len(noise)]
+            clean = clean[0:len(noise)]
 
-        assert len(clean) == len(noise)
+            assert len(clean) == len(noise)
 
-        # Mix the clean speech and the noise together and write to output
-        for i in range(np.size(snr)):
-            clean_snr, noise_snr, noisy_snr = snr_mixer(clean=clean,
-                                                        noise=noise,
-                                                        snr=snr[i])
-            noisyfilename = ("noisy" + str(filecounter) + "_SNRdb_" +
-                             str(snr[i]) + "_clnsp" + str(filecounter) +
-                             ".wav")
-            cleanfilename = "clnsp" + str(filecounter) + ".wav"
-            noisefilename = ("noise" + str(filecounter) + "_SNRdb_" +
-                             str(snr[i]) + ".wav")
-            vadlabelfilename = "vad" + str(filecounter) + ".json"
-            noisypath = os.path.join(noisyspeech_dir, noisyfilename)
-            cleanpath = os.path.join(clean_proc_dir, cleanfilename)
-            noisepath = os.path.join(noise_proc_dir, noisefilename)
-            vadlabelpath = os.path.join(vad_label_dir, vadlabelfilename)
-            audiowrite(noisy_snr, fs, noisypath, norm=False)
-            audiowrite(clean_snr, fs, cleanpath, norm=False)
-            audiowrite(noise_snr, fs, noisepath, norm=False)
-            with open(vadlabelpath, "w") as vadlabelfile:
-                json.dump(labels, vadlabelfile)
-            num_samples = num_samples + len(noisy_snr)
+            # Mix the clean speech and the noise together and write to output
+            for i in range(np.size(snr)):
+                clean_snr, noise_snr, noisy_snr = snr_mixer(clean=clean,
+                                                            noise=noise,
+                                                            snr=snr[i])
+                noisyfilename = ("noisy" + str(filecounter) + "_SNRdb_" +
+                                 str(snr[i]) + "_clnsp" + str(filecounter) +
+                                 ".wav")
+                cleanfilename = "clnsp" + str(filecounter) + ".wav"
+                noisefilename = ("noise" + str(filecounter) + "_SNRdb_" +
+                                 str(snr[i]) + ".wav")
+                vadlabelfilename = "vad" + str(filecounter) + ".json"
+                noisypath = os.path.join(noisyspeech_dir, noisyfilename)
+                cleanpath = os.path.join(clean_proc_dir, cleanfilename)
+                noisepath = os.path.join(noise_proc_dir, noisefilename)
+                vadlabelpath = os.path.join(vad_label_dir, vadlabelfilename)
+                audiowrite(noisy_snr, fs, noisypath, norm=False)
+                audiowrite(clean_snr, fs, cleanpath, norm=False)
+                audiowrite(noise_snr, fs, noisepath, norm=False)
+                with open(vadlabelpath, "w") as vadlabelfile:
+                    json.dump(labels, vadlabelfile)
+                num_samples = num_samples + len(noisy_snr)
 
-        filecounter = filecounter + 1
+            filecounter = filecounter + 1
+            pbar.update(1)
 
     # Create metadata file
     metadata = {'length': filecounter, 'snr': list(snr), 'fs': fs}
