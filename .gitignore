@@ -107,3 +107,4 @@ noisy_speech_test/
 noisy_speech_train/
 metadata.json
 .vscode
+lightning_logs/
