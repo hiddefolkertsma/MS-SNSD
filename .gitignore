@@ -103,9 +103,7 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-CleanSpeech_training/*
-Noise_training/*
-NoisySpeech_training/*
-vad_labels/*
+noisy_speech_test/
+noisy_speech_train/
 metadata.json
 .vscode

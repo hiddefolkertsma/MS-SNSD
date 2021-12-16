@@ -40,18 +40,23 @@ def main(cfg):
     silence_upper = float(cfg["silence_upper"])
 
     # Check if output directories exist
-    noisyspeech_dir = os.path.join(os.path.dirname(__file__),
-                                   "NoisySpeech_training")
+    output_dir = os.path.join(os.path.dirname(__file__), cfg["output_dir"])
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    noisyspeech_dir = os.path.join(output_dir, "noisy_speech")
     if not os.path.exists(noisyspeech_dir):
         os.makedirs(noisyspeech_dir)
-    clean_proc_dir = os.path.join(os.path.dirname(__file__),
-                                  "CleanSpeech_training")
+
+    clean_proc_dir = os.path.join(output_dir, "clean_speech")
     if not os.path.exists(clean_proc_dir):
         os.makedirs(clean_proc_dir)
-    noise_proc_dir = os.path.join(os.path.dirname(__file__), "Noise_training")
+
+    noise_proc_dir = os.path.join(output_dir, "noise")
     if not os.path.exists(noise_proc_dir):
         os.makedirs(noise_proc_dir)
-    vad_label_dir = os.path.join(os.path.dirname(__file__), "vad_labels")
+
+    vad_label_dir = os.path.join(output_dir, "vad_labels")
     if not os.path.exists(vad_label_dir):
         os.makedirs(vad_label_dir)
 
@@ -175,7 +180,7 @@ if __name__ == "__main__":
         default="noisyspeech_synthesizer.cfg",
         help="Read noisyspeech_synthesizer.cfg for all the details",
     )
-    parser.add_argument("--cfg_str", type=str, default="noisy_speech")
+    parser.add_argument("--cfg_str", type=str, default="noisy_speech_train")
     args = parser.parse_args()
 
     cfgpath = os.path.join(os.path.dirname(__file__), args.cfg)
