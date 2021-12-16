@@ -167,7 +167,7 @@ def main(cfg):
 
     # Create metadata file
     metadata = {'length': filecounter, 'snr': list(snr), 'fs': fs}
-    with open("metadata.json", 'w') as metadata_file:
+    with open(os.path.join(output_dir, "metadata.json"), 'w') as metadata_file:
         json.dump(metadata, metadata_file)
 
 
